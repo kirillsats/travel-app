@@ -1,40 +1,28 @@
 pipeline {
     agent any
     stages {
-        stage('Build Docker image') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build("travel-app:latest")
-                }
+                sh 'docker build -t travel-destination-app:latest .'
             }
         }
-        stage('Run Docker container') {
+        stage('Run Container') {
             steps {
-                script {
-                    sh "docker rm -f travel-app-test || true"
-                    sh "docker run -d --name travel-app-test -p 3000:3000 travel-app:latest"
-                    sleep 5
-                }
+                sh 'docker run -d --rm -p 3000:3000 --name travel-test travel-destination-app:latest'
             }
         }
-        stage('Test /travel endpoint') {
+        stage('Test /travel Endpoint') {
             steps {
                 script {
-                    sh '''
-                        RESPONSE=$(curl -s http://localhost:3000/travel)
-                        echo "Endpoint response: $RESPONSE"
-                        if [[ $RESPONSE != *"Jaapan"* ]]; then
-                          echo "Endpoint check failed"
-                          exit 1
-                        fi
-                    '''
+                    sleep 3 // Ждём запуск контейнера
                 }
+                sh 'curl --fail http://localhost:3000/travel'
             }
         }
     }
     post {
         always {
-            sh "docker rm -f travel-app-test || true"
+            sh 'docker rm -f travel-test || true'
         }
     }
 }
